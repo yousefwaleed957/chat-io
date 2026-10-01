@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chat io - Modern UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --glass-bg: rgba(18, 26, 43, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-glow: #3b82f6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+
+        body {
+            background: var(--bg-main);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 35%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .app-window {
+            width: 100%;
+            max-width: 1300px;
+            height: 92vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        /* Header / Navbar */
+        .navbar {
+            height: 75px;
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(11, 15, 25, 0.4);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        .user-profile:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .avatar-frame {
+            position: relative;
+            width: 46px;
+            height: 46px;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            object-fit: cover;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .online-status {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border: 2.5px solid #0b0f19;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -2px;
+            left: -2px;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .user-details h4 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+        .user-details span { font-size: 12px; color: var(--text-muted); }
+
+        .nav-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-admin {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            display: none; /* يظهر للأدمن فقط */
+        }
+        .btn-admin:hover {
+            background: rgba(239, 68, 68, 0.25);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Layout Main Body */
+        .app-body { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 340px;
+            background: rgba(11, 15, 25, 0.3);
+            border-left: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .friends-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 5px;
+        }
+
+        .friend-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .friend-card:hover, .friend-card.active {
+            background: rgba(59, 130, 246, 0.12);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .friend-card.active { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15); }
+
+        .friend-info { display: flex; align-items: center; gap: 12px; }
+        .friend-avatar {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: #1e293b; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; position: relative;
+        }
+
+        /* Main Chat Canvas */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.2);
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 14px 18px;
+            border-radius: 20px;
+            font-size: 14.5px;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-bubble.me {
+            align-self: flex-start;
+            background: var(--accent-gradient);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+        }
+
+        .message-bubble.other {
+            align-self: flex-end;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-sender-name {
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.85;
+            margin-bottom: 5px;
+        }
+
+        /* Chat Input Section */
+        .input-bar {
+            padding: 18px 25px;
+            background: rgba(11, 15, 25, 0.6);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 14px 20px;
+            border-radius: 18px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #3b82f6;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .send-btn {
+            background: var(--accent-gradient);
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .send-btn:hover { transform: scale(1.05); }
+
+        /* Modals Glass */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-card h3 { color: #38bdf8; margin-bottom: 18px; font-weight: 800; }
+        .modal-card input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: #fff;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .btn-confirm {
+            background: var(--accent-gradient);
+            border: none;
+            color: #fff;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            margin-top: 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        <!-- Navbar Header -->
+        <div class="navbar">
+            <div class="user-profile" onclick="openModal('profileModal')">
+                <div class="avatar-frame">
+                    <img id="myAvatar" class="avatar-img" src="" alt="" style="display:none;">
+                    <div id="avatarFallback" class="avatar-img">U</div>
+                    <div class="online-status"></div>
+                </div>
+                <div class="user-details">
+                    <h4 id="myUsername">جاري التحميل...</h4>
+                    <span id="myIDDisplay">ID: ---</span>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <!-- زر لوحة التحكم يظهر فقط لـ USER-7108 -->
+                <button class="btn-glass btn-admin" id="adminControlBtn" onclick="window.location.href='admin.html'">
+                    <i class="fa-solid fa-user-shield"></i> لوحة الأدمن
+                </button>
+                <button class="btn-glass" onclick="openModal('addFriendModal')"><i class="fa-solid fa-user-plus"></i> إضافة صديق</button>
+                <button class="btn-glass" onclick="openModal('profileModal')"><i class="fa-solid fa-sliders"></i> الإعدادات</button>
+            </div>
+        </div>
+
+        <!-- App Body Layout -->
+        <div class="app-body">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <span class="sidebar-title"><i class="fa-solid fa-comments"></i> المحادثات</span>
+                    <button class="btn-glass" style="padding: 6px 12px;" onclick="openModal('addGroupModal')"><i class="fa-solid fa-plus"></i> مجموعة</button>
+                </div>
+
+                <div class="friends-list" id="friendsList"></div>
+            </div>
+
+            <!-- Chat Canvas -->
+            <div class="chat-area">
+                <div class="chat-messages" id="chatMessages"></div>
+
+                <div class="input-bar">
+                    <input type="text" class="chat-input" id="messageInput" placeholder="اكتب رسالة الآن..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" id="micBtn" onclick="toggleRecord()"><i class="fa-solid fa-microphone"></i></button>
+                    <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="addGroupModal">
+        <div class="modal-card">
+            <h3>إنشاء مجموعة جديدة</h3>
+            <input type="text" id="groupNameInput" placeholder="اسم المجموعة">
+            <button class="btn-confirm" onclick="createGroup()">إنشاء</button>
+            <button class="btn-cancel" onclick="closeModal('addGroupModal')">إلغاء</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addFriendModal">
+        <div class="modal-card">
+            <h3>إضافة صديق</h3>
+            <input type="text" id="friendNameInput" placeholder="اسم الصديق">
+            <input type="text" id="friendIDInput" placeholder="الـ ID الخاص به">
+            <button class="btn-confirm" onclick="addFriend()">إضافة</button>
+            <button class="btn-cancel" onclick="closeModal('addFriendModal')">إلغاء</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-card">
+            <h3>تعديل الحساب</h3>
+            <input type="text" id="editName" placeholder="الاسم الجديد">
+            <input type="file" id="editAvatar" accept="image/*" style="margin-bottom: 15px;">
+            <button class="btn-confirm" onclick="saveProfile()">حفظ التغييرات</button>
+            <button class="btn-cancel" onclick="closeModal('profileModal')">إلغاء</button>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_ID = 'USER-7108'; // ID الأدمن الخاص بك
+
+        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (!currentUser) {
+            currentUser = { username: 'مستخدم جديد', id: 'USER-7108' }; // تعيين الـ ID الخاص بك افتراضياً
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        }
+
+        // قائمة الأصدقاء تبدأ فارغة تماماً
+        let friendsData = JSON.parse(localStorage.getItem('friendsData') || '[]');
+
+        function initUI() {
+            document.getElementById('myUsername').innerText = currentUser.username;
+            document.getElementById('myIDDisplay').innerText = `ID: ${currentUser.id}`;
+
+            // إظهار زر الأدمن فقط إذا كان الـ ID الخاص بك هو USER-7108
+            if (currentUser.id === ADMIN_ID || currentUser.username.toLowerCase() === 'admin') {
+                document.getElementById('adminControlBtn').style.display = 'inline-flex';
+            }
+
+            if (currentUser.avatar) {
+                document.getElementById('myAvatar').src = currentUser.avatar;
+                document.getElementById('myAvatar').style.display = 'block';
+                document.getElementById('avatarFallback').style.display = 'none';
+            }
+
+            renderFriendsList();
+        }
+
+        function renderFriendsList() {
+            const list = document.getElementById('friendsList');
+            let html = `
+                <div class="friend-card active" onclick="switchChat('الشات العام')">
+                    <div class="friend-info">
+                        <div class="friend-avatar" style="background: var(--accent-gradient);"><i class="fa-solid fa-globe"></i></div>
+                        <div>
+                            <div style="font-weight:700; font-size:14px;">الشات العام</div>
+                            <div style="font-size:11px; color:var(--text-muted);">جميع المتواجدين</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            friendsData.forEach((f) => {
+                if (!f.isBanned) {
+                    html += `
+                        <div class="friend-card" onclick="switchChat('${f.name}')">
+                            <div class="friend-info">
+                                <div class="friend-avatar">
+                                    ${f.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:14px;">${f.name}</div>
+                                    <div style="font-size:11px; color:var(--text-muted);">${f.id}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            list.innerHTML = html;
+            localStorage.setItem('friendsData', JSON.stringify(friendsData));
+        }
+
+        function switchChat(name) {
+            document.querySelectorAll('.friend-card').forEach(el => el.classList.remove('active'));
+            const box = document.getElementById('chatMessages');
+            box.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:20px;">محادثة: <b>${name}</b></div>`;
+        }
+
+        function sendMessage(textData = null, isAudio = false) {
+            const text = textData || document.getElementById('messageInput').value.trim();
+            if (!text) return;
+            const box = document.getElementById('chatMessages');
+            const msg = document.createElement('div');
+            msg.className = 'message-bubble me';
+            
+            let content = `<div class="msg-sender-name">${currentUser.username}</div>`;
+            if (isAudio) { content += `<audio controls src="${text}" style="max-width: 100%; border-radius: 8px;"></audio>`; } 
+            else { content += `<div>${text}</div>`; }
+            
+            msg.innerHTML = content;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+            if (!textData) document.getElementById('messageInput').value = '';
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        function addFriend() {
+            const name = document.getElementById('friendNameInput').value.trim();
+            const id = document.getElementById('friendIDInput').value.trim();
+            if (!name) return;
+            friendsData.push({ id: id || 'USER-' + Math.floor(1000 + Math.random() * 9000), name: name, isBanned: false });
+            renderFriendsList();
+            closeModal('addFriendModal');
+            document.getElementById('friendNameInput').value = '';
+        }
+
+        function createGroup() {
+            const name = document.getElementById('groupNameInput').value.trim();
+            if (!name) return;
+            friendsData.push({ id: 'GRP-' + Math.floor(1000 + Math.random() * 9000), name: `جروب: ${name}`, isBanned: false });
+            renderFriendsList();
+            closeModal('addGroupModal');
+            document.getElementById('groupNameInput').value = '';
+        }
+
+        function saveProfile() {
+            const name = document.getElementById('editName').value.trim();
+            const file = document.getElementById('editAvatar').files[0];
+            if (name) currentUser.username = name;
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUser.avatar = e.target.result;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    initUI();
+                    closeModal('profileModal');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                initUI();
+                closeModal('profileModal');
+            }
+        }
+
+        let mediaRecorder, chunks = [], isRec = false;
+        async function toggleRecord() {
+            const btn = document.getElementById('micBtn');
+            if (!isRec) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    chunks = [];
+                    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/mp3' });
+                        sendMessage(URL.createObjectURL(blob), true);
+                    };
+                    mediaRecorder.start();
+                    isRec = true;
+                    btn.style.background = '#ef4444';
+                } catch (err) { alert('يرجى التنسيق والسماح بالمايك'); }
+            } else {
+                mediaRecorder.stop();
+                isRec = false;
+                btn.style.background = 'var(--accent-gradient)';
+            }
+        }
+
+        initUI();
+    </script>
+</body>
+</html>

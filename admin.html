@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chat io - لوحة تحكم الأدمن</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body { background: #090d16; color: #fff; min-height: 100vh; padding: 20px; }
+        
+        .header { background: #151d2e; padding: 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b; margin-bottom: 25px; }
+        .header h2 { color: #f87171; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .back-btn { background: #2563eb; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #151d2e; padding: 20px; border-radius: 16px; border: 1px solid #1e293b; text-align: center; }
+        .stat-card .num { font-size: 28px; font-weight: bold; margin-top: 5px; color: #38bdf8; }
+        .stat-card .label { font-size: 13px; color: #94a3b8; }
+
+        .users-section { background: #151d2e; padding: 20px; border-radius: 16px; border: 1px solid #1e293b; }
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #38bdf8; }
+
+        .user-table { width: 100%; border-collapse: collapse; text-align: right; }
+        .user-table th, .user-table td { padding: 12px 15px; border-bottom: 1px solid #1e293b; font-size: 14px; }
+        .user-table th { color: #94a3b8; font-weight: bold; }
+        
+        .ban-btn { background: #ef4444; border: none; color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .ban-btn:hover { background: #dc2626; }
+        .unban-btn { background: #10b981; border: none; color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .unban-btn:hover { background: #059669; }
+
+        .badge-banned { background: #451a1a; color: #f87171; padding: 4px 8px; border-radius: 6px; font-size: 11px; }
+        .badge-active { background: #064e3b; color: #34d399; padding: 4px 8px; border-radius: 6px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><i class="fa-solid fa-user-shield"></i> لوحة إدارة التطبيق</h2>
+        <a href="chat.html" class="back-btn"><i class="fa-solid fa-comments"></i> العودة للشات</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="label">إجمالي المستخدمين</div>
+            <div class="num" id="totalUsers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">المستخدمين المحظورين</div>
+            <div class="num" style="color: #ef4444;" id="bannedUsers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">الحسابات النشطة</div>
+            <div class="num" style="color: #10b981;" id="activeUsers">0</div>
+        </div>
+    </div>
+
+    <div class="users-section">
+        <div class="section-title"><i class="fa-solid fa-users-gear"></i> إدارة مستخدمي التطبيق</div>
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>الـ ID</th>
+                    <th>الاسم</th>
+                    <th>الحالة</th>
+                    <th>التحكم</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // كود الأدمن الخاص بك
+        const ADMIN_ID = 'USER-7108';
+
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+        // التحقق من أن المستخدم الحالي يحمل الكود الخاص بك أو اسم admin
+        if (!currentUser || (currentUser.id !== ADMIN_ID && currentUser.username.toLowerCase() !== 'admin')) {
+            alert('عذراً، هذه الصفحة مقتصرة على الأدمن فقط!');
+            window.location.href = 'chat.html';
+        }
+
+        // إزالة الأسماء الافتراضية وبدء القائمة فارغة
+        let friendsData = JSON.parse(localStorage.getItem('friendsData') || '[]');
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('userTableBody');
+            let html = '';
+            let bannedCount = 0;
+
+            if (friendsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">لا يوجد مستخدمين مضافين حالياً</td></tr>';
+            } else {
+                friendsData.forEach((u, index) => {
+                    if (u.isBanned) bannedCount++;
+                    html += `
+                        <tr>
+                            <td><code>${u.id}</code></td>
+                            <td><b>${u.name}</b></td>
+                            <td>${u.isBanned ? '<span class="badge-banned">محظور</span>' : '<span class="badge-active">نشط</span>'}</td>
+                            <td>
+                                <button class="${u.isBanned ? 'unban-btn' : 'ban-btn'}" onclick="toggleBan(${index})">
+                                    ${u.isBanned ? '<i class="fa-solid fa-unlock"></i> إلغاء الحظر' : '<i class="fa-solid fa-ban"></i> حظر'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            }
+
+            document.getElementById('totalUsers').innerText = friendsData.length;
+            document.getElementById('bannedUsers').innerText = bannedCount;
+            document.getElementById('activeUsers').innerText = friendsData.length - bannedCount;
+
+            localStorage.setItem('friendsData', JSON.stringify(friendsData));
+        }
+
+        function toggleBan(index) {
+            friendsData[index].isBanned = !friendsData[index].isBanned;
+            renderAdminTable();
+        }
+
+        renderAdminTable();
+    </script>
+</body>
+</html>

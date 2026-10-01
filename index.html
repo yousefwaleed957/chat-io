@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chat io - تسجيل الدخول</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبة EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body {
+            background: #090d16;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(21, 29, 46, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { font-size: 26px; font-weight: 900; color: #38bdf8; }
+        .input-group { margin-bottom: 16px; position: relative; }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .otp-step { display: none; }
+        .alert-ban { background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; font-size: 13px; text-align: center; }
+        .status-msg { font-size: 13px; margin-bottom: 12px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<script>
+    // فحص التسجيل التلقائي
+    const savedUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (savedUser && savedUser.isLoggedIn) {
+        window.location.href = 'chat.html';
+    }
+</script>
+
+<div class="card">
+    <div class="header">
+        <h2>chat io</h2>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 5px;">أدخل إيميلك للانضمام للشات</p>
+    </div>
+
+    <div class="alert-ban" id="banAlert"><i class="fa-solid fa-ban"></i> تم حظر هذا الحساب من قبل الأدمن!</div>
+    <div class="status-msg" id="statusMsg"></div>
+
+    <!-- خطوة إدخال الإيميل -->
+    <form id="loginForm">
+        <div class="input-group">
+            <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+        </div>
+        <button type="submit" class="btn" id="sendBtn">إرسال كود التحقق للإيميل</button>
+    </form>
+
+    <!-- خطوة إدخال الـ OTP -->
+    <form id="otpForm" class="otp-step">
+        <p style="font-size: 13px; margin-bottom: 10px; color: #10b981;">تم إرسال كود التحقق من chat io لإيميلك!</p>
+        <div class="input-group">
+            <input type="text" id="otpCode" placeholder="أدخل كود التحقق" required>
+        </div>
+        <button type="submit" class="btn">تأكيد والدخول</button>
+    </form>
+</div>
+
+<script>
+    // 🟢 المفاتيح الخاصة بك مكتملة ومضبوطة:
+    const EMAILJS_PUBLIC_KEY = "ox3rDum9BuJDwlBkj";   // من الصورة الأولى
+    const EMAILJS_SERVICE_ID = "service_yf9ogwm";    // Service ID الخاص بك
+    const EMAILJS_TEMPLATE_ID = "template_4xa72wp";  // من الصورة الثانية
+
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    let tempEmail = '';
+    let generatedOTP = null;
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        tempEmail = document.getElementById('email').value.trim().toLowerCase();
+        const sendBtn = document.getElementById('sendBtn');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // فحص الحظر
+        const bannedUsers = JSON.parse(localStorage.getItem('bannedUsers') || '[]');
+        if (bannedUsers.includes(tempEmail)) {
+            document.getElementById('banAlert').style.display = 'block';
+            return;
+        }
+
+        // توليد كود عشوائي
+        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+        sendBtn.disabled = true;
+        sendBtn.innerText = "جاري إرسال الكود...";
+        statusMsg.style.color = "#94a3b8";
+        statusMsg.innerText = "انتظر لحظة...";
+
+        // إرسال الإيميل عبر EmailJS
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            email: tempEmail,
+            otp_code: generatedOTP
+        })
+        .then(() => {
+            statusMsg.innerText = "";
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('otpForm').style.display = 'block';
+        })
+        .catch((error) => {
+            console.error("EmailJS Error:", error);
+            sendBtn.disabled = false;
+            sendBtn.innerText = "إرسال كود التحقق للإيميل";
+            statusMsg.style.color = "#ef4444";
+            statusMsg.innerText = "حدث خطأ أثناء الإرسال! افحص الكونسول (F12).";
+        });
+    });
+
+    // تأكيد الكود والدخول
+    document.getElementById('otpForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const inputOTP = document.getElementById('otpCode').value.trim();
+
+        if (inputOTP === generatedOTP) {
+            let users = JSON.parse(localStorage.getItem('appUsers') || '{}');
+            if (!users[tempEmail]) {
+                users[tempEmail] = {
+                    id: 'USER-' + Math.floor(1000 + Math.random() * 9000),
+                    username: tempEmail.split('@')[0],
+                    email: tempEmail
+                };
+                localStorage.setItem('appUsers', JSON.stringify(users));
+            }
+
+            const currentUserData = {
+                ...users[tempEmail],
+                isLoggedIn: true
+            };
+
+            localStorage.setItem('currentUser', JSON.stringify(currentUserData));
+            window.location.href = 'chat.html';
+        } else {
+            alert('كود التحقق غير صحيح! تأكد من الرسالة في بريدك.');
+        }
+    });
+</script>
+
+</body>
+</html>
